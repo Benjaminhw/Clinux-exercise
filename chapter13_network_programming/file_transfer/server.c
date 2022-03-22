@@ -64,75 +64,59 @@ int main(int argc, char *argv[])
         exit;
     }
     strncpy(filename, argv[1], FILE_MAX_LEN);
-    int main(int argc, char *argv[])
+    port = DEFAULT_SVR_PORT;
+    if (argc >= 3)
     {
-        int sockfd, new_fd;
-        //第 1.定义两个 ipv4 地址
-        struct sockaddr_in my_addr;
-        struct sockaddr_in their_addr;
-        int sin_size, numbytes;
-        pthread_t cli_thread;
-        unsigned short port;
-        if (argc < 2)
-        {
-            printf("need a filename without path\n");
-            exit;
-        }
-        strncpy(filename, argv[1], FILE_MAX_LEN);
-        port = DEFAULT_SVR_PORT;
-        if (argc >= 3)
-        {
-            port = (unsigned short)atoi(argv[2]);
-        }
-        //第一步:建立 TCP 套接字 Socket
-        // AF_INET --> ip 通讯
-        // SOCK_STREAM -->TCP
-        if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-        {
-            perror("socket");
-            exit(-1);
-        }
-        //第二步:设置侦听端口
-        //初始化结构体，并绑定 2828 端口
-        memset(&my_addr, 0, sizeof(struct sockaddr));
-        // memset(&my_addr,0,sizeof(my_addr));
-        my_addr.sin_family = AF_INET;
-        /* ipv4 */
-        my_addr.sin_port = htons(port);
-        /* 设置侦听端口是 2828 , 用 htons 转成网络序*/
-        my_addr.sin_addr.s_addr = INADDR_ANY; /* INADDR_ANY 来表示任意 IP 地址可能其通讯 */
-        // bzero(&(my_addr.sin_zero),8);
-        //第三步:绑定套接口,把 socket 队列与端口关联起来.
-        if (bind(sockfd, (struct sockaddr *)&my_addr, sizeof(struct sockaddr)) == -1)
-        {
-            perror("bind");
-            goto EXIT_MAIN;
-        }
-        //第四步:开始在 2828 端口侦听,是否有客户端发来联接
-        if (listen(sockfd, 10) == -1)
-        {
-            perror("listen");
-            goto EXIT_MAIN;
-        }
-        printf("#@ listen port %d\n", port);
-        //第五步:循环与客户端通讯
-        while (1)
-        {
-            sin_size = sizeof(struct sockaddr_in);
-            printf("server waiting...\n");
-            //如果有客户端建立连接，将产生一个全新的套接字 new_fd,专门用于跟这个客户端通信
-            if ((new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &sin_size)) == -1)
-            {
-                perror("accept:");
-                goto EXIT_MAIN;
-            }
-            printf("---client (ip=%s:port=%d) request \n", inet_ntoa(their_addr.sin_addr), ntohs(their_addr.sin_port));
-            //生成一个线程来完成和客户端的会话，父进程继续监听
-            pthread_create(&cli_thread, NULL, handle_client, (void *)new_fd);
-        }
-    //第六步:关闭 socket
-    EXIT_MAIN:
-        close(sockfd);
-        return 0;
+        port = (unsigned short)atoi(argv[2]);
     }
+    //第一步:建立 TCP 套接字 Socket
+    // AF_INET --> ip 通讯
+    // SOCK_STREAM -->TCP
+    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    {
+        perror("socket");
+        exit(-1);
+    }
+    //第二步:设置侦听端口
+    //初始化结构体，并绑定 2828 端口
+    memset(&my_addr, 0, sizeof(struct sockaddr));
+    // memset(&my_addr,0,sizeof(my_addr));
+    my_addr.sin_family = AF_INET;
+    /* ipv4 */
+    my_addr.sin_port = htons(port);
+    /* 设置侦听端口是 2828 , 用 htons 转成网络序*/
+    my_addr.sin_addr.s_addr = INADDR_ANY; /* INADDR_ANY 来表示任意 IP 地址可能其通讯 */
+    // bzero(&(my_addr.sin_zero),8);
+    //第三步:绑定套接口,把 socket 队列与端口关联起来.
+    if (bind(sockfd, (struct sockaddr *)&my_addr, sizeof(struct sockaddr)) == -1)
+    {
+        perror("bind");
+        goto EXIT_MAIN;
+    }
+    //第四步:开始在 2828 端口侦听,是否有客户端发来联接
+    if (listen(sockfd, 10) == -1)
+    {
+        perror("listen");
+        goto EXIT_MAIN;
+    }
+    printf("#@ listen port %d\n", port);
+    //第五步:循环与客户端通讯
+    while (1)
+    {
+        sin_size = sizeof(struct sockaddr_in);
+        printf("server waiting...\n");
+        //如果有客户端建立连接，将产生一个全新的套接字 new_fd,专门用于跟这个客户端通信
+        if ((new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &sin_size)) == -1)
+        {
+            perror("accept:");
+            goto EXIT_MAIN;
+        }
+        printf("---client (ip=%s:port=%d) request \n", inet_ntoa(their_addr.sin_addr), ntohs(their_addr.sin_port));
+        //生成一个线程来完成和客户端的会话，父进程继续监听
+        pthread_create(&cli_thread, NULL, handle_client, (void *)new_fd);
+    }
+//第六步:关闭 socket
+EXIT_MAIN:
+    close(sockfd);
+    return 0;
 }
